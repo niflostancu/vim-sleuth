@@ -6,7 +6,9 @@
 if exists("g:loaded_sleuth") || v:version < 700 || &cp
   finish
 endif
+
 let g:loaded_sleuth = 1
+let g:sleuth_hard_race = get(g:, 'sleuth_hard_race', 0)
 
 function! s:guess(lines) abort
   let options = {}
@@ -85,12 +87,22 @@ function! s:guess(lines) abort
     endif
   endfor
 
-  if heuristics.hard && !heuristics.spaces
-    return {'expandtab': 0, 'shiftwidth': &tabstop}
-  elseif heuristics.soft != heuristics.hard
-    let options.expandtab = heuristics.soft > heuristics.hard
-    if heuristics.hard
-      let options.tabstop = 8
+  if g:sleuth_hard_race
+    " simpler heuristic: when hard > spaces, use tabs; otherwise, expand tabs
+    if heuristics.hard && !heuristics.spaces
+      return {'expandtab': 0, 'shiftwidth': &tabstop}
+    else
+      let options.expandtab = heuristics.hard < heuristics.spaces
+      let options.tabstop = get(options, 'shiftwidth', &shiftwidth)
+    endif
+  else
+    if heuristics.hard && !heuristics.spaces
+      return {'expandtab': 0, 'shiftwidth': &tabstop}
+    elseif heuristics.soft != heuristics.hard
+      let options.expandtab = heuristics.soft > heuristics.hard
+      if heuristics.hard
+        let options.tabstop = 8
+      endif
     endif
   endif
 
